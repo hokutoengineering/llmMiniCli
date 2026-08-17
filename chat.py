@@ -25,7 +25,7 @@ from rich.status import Status
 # ----------------------------- config -----------------------------
 OLLAMA = os.environ.get("OLLAMA_HOST", "http://localhost:11434")
 CHAT_ENDPOINT = f"{OLLAMA}/api/chat"
-MODEL = sys.argv[1] if len(sys.argv) > 1 else os.environ.get("OLLAMA_MODEL", "llama3")
+MODEL = sys.argv[1] if len(sys.argv) > 1 else os.environ.get("OLLAMA_MODEL", "qwen3.5:9b")
 
 console = Console()
 
@@ -141,8 +141,8 @@ def ollama_stream(messages: list) -> tuple[str, list | None]:
         raise
 
 # ---------------------------- one turn ----------------------------
-def turn(user_prompt: str) -> None:
-    messages: list[dict] = [{"role": "user", "content": user_prompt}]
+def turn(user_prompt: str, messages: list[dict]) -> None:
+    messages.append({"role": "user", "content": user_prompt})
 
     # first call - model may answer directly *or* request a tool
     _, tool_calls = ollama_stream(messages)
@@ -192,6 +192,8 @@ def main() -> None:
         )
     )
 
+    messages: list[dict] = []
+
     while True:
         try:
             prompt = console.input("\n[bold cyan]>>[/] ").strip()
@@ -204,7 +206,7 @@ def main() -> None:
             break
 
         try:
-            turn(prompt)
+            turn(prompt, messages)
         except requests.exceptions.ConnectionError:
             console.print("[red]Lost connection to Ollama.[/]")
         except json.JSONDecodeError:
